@@ -30,11 +30,11 @@ def make_prefix(dp, template_type):
 
     if template_type == 'base':
         """This works for any base model"""
-        prefix = f"""Answer the given programming question. \
+        prefix = f"""Answer the given programming question in Python source code. \
 You must conduct reasoning inside <think> and </think> at the beginning of generation and every time you get new execution output. \
-After reasoning, you should write your best answer, the entire python file to solve the programming question. Write ONLY the Python code of your answer in between <execute> and </execute> and it will return the python execution information between <output> and </output>. \
-You can execute new files as many times as you want. \
-If you find no further execution testing is needed, you can directly provide the full code solution inside <answer> and </answer>.""" + """ For example, for a question on writing a function to find the similar elements from the given two tuple lists, the answer would be <answer> def similar_elements(test_tup1, test_tup2):\r\n  res = tuple(set(test_tup1) & set(test_tup2))\r\n  return (res)  </answer>.""" + f""" Question: {question}\r\n Your code should pass these tests: <tests> {tests} </tests> """
+After reasoning, you should write your entire python solution as <execute> python code </execute> and the execution engine will return the python program output between <output> and </output>. \
+You can execute new programs as many times as you want. \
+If you are finished execution testing, you can directly provide the final code solution inside <answer> and </answer>.""" + """ For example, for a question on writing a function to find the similar elements from the given two tuple lists, the answer would be <answer> def similar_elements(test_tup1, test_tup2):\r\n  res = tuple(set(test_tup1) & set(test_tup2))\r\n  return (res)  </answer>.""" + f""" Question: {question}\r\n Your code should pass these tests: <tests> {tests} </tests> """
     else:
         raise NotImplementedError
     return prefix
@@ -48,10 +48,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    data_source = 'mbpp'
+    data_source = 'augmented'
 
     dataset = []
-    with open('mbpp_data.jsonl', 'r') as f:
+    with open('augmented.jsonl', 'r') as f:
         for line in f:
             if line.strip():
                 data = json.loads(line)
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     def make_map_fn(split):
         def process_fn(example, idx):
             question = example['text'].strip()
-            test_list = example['test_list'].strip()
+            test_list = example['test_list']
             # if question[-1] != '?':
             #     question += '?'
             

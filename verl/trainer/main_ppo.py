@@ -17,13 +17,16 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 
 from verl import DataProto
 import torch
-from verl.utils.reward_score import qa_em
+from verl.utils.reward_score import qa_em, execute
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 import re
 import numpy as np
+import pdb
 
 def _select_rm_score_fn(data_source):
-    if "nq" in data_source:
+    if "augmented" in data_source: 
+        return execute.compute_score 
+    elif "nq" in data_source:
         return qa_em.compute_score_em
     else:
         raise NotImplementedError
@@ -40,6 +43,7 @@ class RewardManager():
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
+        pdb.set_trace()
 
         # If there is rm score, we directly return rm score. Otherwise, we compute via rm_score_fn
         if 'rm_scores' in data.batch.keys():
