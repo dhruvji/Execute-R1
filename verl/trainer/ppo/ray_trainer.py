@@ -443,7 +443,19 @@ class RayPPOTrainer(object):
         import torch
         reward_tensor_lst = []
         data_source_lst = []
+        gen_config = GenerationConfig(
+            max_turns=self.config.max_turns,
+            max_start_length=self.config.data.max_start_length,
+            max_prompt_length=self.config.data.max_prompt_length,
+            max_response_length=self.config.data.max_response_length,
+            max_obs_length=self.config.data.max_obs_length,
+            num_gpus=self.config.trainer.n_gpus_per_node,
+            no_think_rl=self.config.algorithm.no_think_rl,
+            search_url = self.config.retriever.url,
+            topk = self.config.retriever.topk,
+        )
 
+        '''
         gen_config = GenerationConfig(
             max_turns=self.config.max_turns,
             max_start_length=self.config.data.max_start_length,
@@ -454,6 +466,7 @@ class RayPPOTrainer(object):
             no_think_rl=self.config.algorithm.no_think_rl,
             execute_url="http://127.0.0.1:8000/execute"
         )
+        '''
 
         # Agent config preparation
         generation_manager = LLMGenerationManager(
@@ -553,6 +566,7 @@ class RayPPOTrainer(object):
 
 
     def init_workers(self):
+        print("HELLO IN INIT WORKERS")
         """Init resource pool and worker group"""
         self.resource_pool_manager.create_resource_pool()
 
@@ -667,6 +681,7 @@ class RayPPOTrainer(object):
         self.global_steps = 0
         # perform validation before training
         # currently, we only support validation using the reward_function.
+        print("Bello in the fit method")
         if self.val_reward_fn is not None and self.config.trainer.get('val_before_train', True):
             val_metrics = self._validate()
             pprint(f'Initial validation metrics: {val_metrics}')
@@ -686,9 +701,22 @@ class RayPPOTrainer(object):
             max_obs_length=self.config.data.max_obs_length,
             num_gpus=self.config.trainer.n_gpus_per_node,
             no_think_rl=self.config.algorithm.no_think_rl,
+            search_url = self.config.retriever.url,
+            topk = self.config.retriever.topk,
+        )
+        '''
+        gen_config = GenerationConfig(
+            max_turns=self.config.max_turns,
+            max_start_length=self.config.data.max_start_length,
+            max_prompt_length=self.config.data.max_prompt_length,
+            max_response_length=self.config.data.max_response_length,
+            max_obs_length=self.config.data.max_obs_length,
+            num_gpus=self.config.trainer.n_gpus_per_node,
+            no_think_rl=self.config.algorithm.no_think_rl,
             execute_url="http://127.0.0.1:8000/execute"
         )
 
+        '''
         generation_manager = LLMGenerationManager(
             tokenizer=self.tokenizer,
             actor_rollout_wg=self.actor_rollout_wg,

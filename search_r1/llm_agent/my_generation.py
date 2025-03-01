@@ -26,10 +26,8 @@ class GenerationConfig:
     # logging: dict
     num_gpus: int
     no_think_rl: bool=False
+    search_url: str = None
     topk: int = 3
-    timeout: int = 10
-    max_output_length: int = 1000
-    execute_url: str = None
 
 class LLMGenerationManager:
     def __init__(
@@ -409,7 +407,7 @@ If I want to give the final file of code as the answer, I should put the answer 
         
 
         print(payload)
-        return requests.post(self.config.execute_url, json=payload).json()
+        return requests.post(self.config.search_url, json=payload).json()
 
     def _execution2string(self, execution_result):
         """
