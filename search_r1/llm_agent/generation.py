@@ -25,7 +25,6 @@ class GenerationConfig:
     # logging: dict
     num_gpus: int
     no_think_rl: bool=False
-    search_url: str = None
     topk: int = 3
     timeout: int = 10
     max_output_length: int = 1000
