@@ -5,20 +5,26 @@ import json
 
 
 def extract_solution(solution_str):
+    """Extract the equation from the solution string."""
     # Remove everything before the first "Assistant:"
-    if "Assistant:" in solution_str:
-        solution_str = solution_str.split("Assistant:", 1)[1]
-    else:
-        return None
+    # if "Assistant:" in solution_str:
+    #     solution_str = solution_str.split("Assistant:", 1)[1]
+    # elif "<|im_start|>assistant" in solution_str:
+    #     solution_str = solution_str.split("<|im_start|>assistant", 1)[1]
+    # else:
+    #     return None
+    # solution_str = solution_str.split('\n')[-1]
 
     answer_pattern = r'<answer>(.*?)</answer>'
-    match = re.finditer(answer_pattern, solution_str)
+    match = re.finditer(answer_pattern, solution_str, re.DOTALL)
     matches = list(match)
-    if matches:
-        final_answer = matches[-1].group(1).strip()
-    else:
-        final_answer = None
-    return final_answer
+    
+    # If there are 0 or exactly 1 matches, return None
+    if len(matches) <= 2:
+        return None
+    
+    # If there are 2 or more matches, return the last one
+    return matches[-1].group(1).strip()
 
 
 def compute_score(solution_str, ground_truth, method='strict', format_score=0.1, score=1.):
