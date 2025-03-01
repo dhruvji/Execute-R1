@@ -1,5 +1,5 @@
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export DATA_DIR='data/nq_search'
+export DATA_DIR='data/nq_execute'
 
 WAND_PROJECT='Search-R1'
 
@@ -27,14 +27,14 @@ export VLLM_ATTENTION_BACKEND=XFORMERS # vllm + qwen2-7b with flash_attn has som
 # max_prompt_length = (config['training']['max_start_length'] + config['training']['max_response_length'] * (config['training']['max_turns'] - 1) + config['training']['max_obs_length'] * config['training']['max_turns'])
 
 PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
-    data.train_files=$DATA_DIR/train.parquet \
-    data.val_files=$DATA_DIR/test.parquet \
+    data.train_files=$DATA_DIR/train_execute.parquet \
+    data.val_files=$DATA_DIR/test_execute.parquet \
     data.train_data_num=null \
     data.val_data_num=null \
-    data.train_batch_size=512 \
-    data.val_batch_size=256 \
+    data.train_batch_size=64 \
+    data.val_batch_size=32 \
     data.max_prompt_length=4096 \
-    data.max_response_length=500 \
+    data.max_response_length=1500 \
     data.max_start_length=2048 \
     data.max_obs_length=500 \
     data.shuffle_train_dataloader=True \
