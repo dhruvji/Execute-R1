@@ -322,7 +322,6 @@ class LLMGenerationManager:
         Returns:
             List of observation strings
         """
-        pdb.set_trace()
         cur_actions, contents = self.postprocess_predictions(predictions)
         next_obs, dones = [], []
         
@@ -394,7 +393,7 @@ If I want to give the final file of code as the answer, I should put the answer 
         Returns:
             List of execution results (stdout/stderr) as strings
         """
-        results = self._batch_execute(queries)['result']
+        results = self._batch_execute(queries)
         return [self._execution2string(result) for result in results]
 
     def _batch_execute(self, queries):
@@ -403,10 +402,13 @@ If I want to give the final file of code as the answer, I should put the answer 
         """
         payload = {
             "code": queries,
+            "test_cases": [list()]*len(queries)
             #"timeout": self.config.timeout,  # Timeout per execution in seconds
             #"max_output_length": self.config.max_output_length  # Limit output size
         }
         
+
+        print(payload)
         return requests.post(self.config.execute_url, json=payload).json()
 
     def _execution2string(self, execution_result):
@@ -416,6 +418,11 @@ If I want to give the final file of code as the answer, I should put the answer 
         format_output = ''
         
         # Handle different execution result fields
+        if 'output' in execution_result: 
+            output = execution_result['output'].strip()
+            if output: 
+                format_output += f"Output:\n{output}\n"
+        '''         
         if 'stdout' in execution_result:
             stdout = execution_result['stdout'].strip()
             if stdout:
@@ -425,7 +432,7 @@ If I want to give the final file of code as the answer, I should put the answer 
             stderr = execution_result['stderr'].strip()
             if stderr:
                 format_output += f"Error:\n{stderr}\n"
-                
+        '''      
         if 'test_results' in execution_result:
             test_results = execution_result['test_results']
             format_output += f"Test Results:\n"

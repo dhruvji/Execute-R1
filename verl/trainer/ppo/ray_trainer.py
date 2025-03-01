@@ -27,6 +27,7 @@ from typing import Type, Dict
 import re
 import json
 from collections import defaultdict
+import pdb
 
 import numpy as np
 from codetiming import Timer
@@ -41,6 +42,7 @@ from verl.utils.seqlen_balancing import get_seqlen_balanced_partitions, log_seql
 
 import re
 from search_r1.llm_agent.generation import LLMGenerationManager, GenerationConfig
+#from search_r1.llm_agent.my_generation import LLMGenerationManager, GenerationConfig
 
 WorkerType = Type[Worker]
 
@@ -450,8 +452,7 @@ class RayPPOTrainer(object):
             max_obs_length=self.config.data.max_obs_length,
             num_gpus=self.config.trainer.n_gpus_per_node,
             no_think_rl=self.config.algorithm.no_think_rl,
-            search_url = self.config.retriever.url,
-            topk = self.config.retriever.topk,
+            execute_url="http://127.0.0.1:8000/execute"
         )
 
         # Agent config preparation
@@ -685,8 +686,7 @@ class RayPPOTrainer(object):
             max_obs_length=self.config.data.max_obs_length,
             num_gpus=self.config.trainer.n_gpus_per_node,
             no_think_rl=self.config.algorithm.no_think_rl,
-            search_url = self.config.retriever.url,
-            topk = self.config.retriever.topk,
+            execute_url="http://127.0.0.1:8000/execute"
         )
 
         generation_manager = LLMGenerationManager(
@@ -699,6 +699,7 @@ class RayPPOTrainer(object):
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 print(f'epoch {epoch}, step {self.global_steps}')
+                print(batch_dict)
                 metrics = {}
                 timing_raw = {}
 

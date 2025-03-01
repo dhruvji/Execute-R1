@@ -81,6 +81,7 @@ class RayResourcePool(ResourcePool):
             placement_group(bundles=bundles, strategy=strategy, name=pg_name_prefix + str(idx), lifetime=lifetime)
             for idx, bundles in enumerate(pg_scheme)
         ]
+        print(f"LENGTH OF PG SCHEME: {len(pg_scheme)}")
 
         ray.get([pg.ready() for pg in pgs])
 
