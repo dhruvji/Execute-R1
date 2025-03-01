@@ -52,8 +52,8 @@ def compute_scores(solution_str, ground_truth, method='strict', format_score=0.1
 
     # Prepare execution request
     payload = {
-        "code": code,
-        "test_cases": ground_truth['test_cases']
+        "code": [code],
+        "test_cases": [list(ground_truth['test_cases'])]
     }
 
     try:
@@ -66,6 +66,11 @@ def compute_scores(solution_str, ground_truth, method='strict', format_score=0.1
         )
         result = response.json()
 
+        test_results = [] 
+        for res in result: 
+            test_results += res["test_results"] 
+
+        '''
         # Check for execution errors
         if result.get("error"):
             if do_print:
@@ -78,7 +83,7 @@ def compute_scores(solution_str, ground_truth, method='strict', format_score=0.1
             if do_print:
                 print("No test results returned")
             return format_score
-
+        '''
         passed_tests = sum(1 for test in test_results if test["passed"])
         total_tests = len(test_results)
         

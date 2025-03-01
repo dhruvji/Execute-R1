@@ -191,8 +191,10 @@ class LLMGenerationManager:
         padded_output.batch = trimmed_batch
         return padded_output
 
-    def run_llm_loop(self, gen_batch, initial_input_ids: torch.Tensor) -> Tuple[Dict, Dict]:
+    def run_llm_loop(self, gen_batch, ground_truths, initial_input_ids: torch.Tensor) -> Tuple[Dict, Dict]:
         """Run main LLM generation loop."""
+        pdb.set_trace()
+        ground_truths = [i['test_cases'] for i in ground_truths] 
         
         original_left_side = {'input_ids': initial_input_ids[:, -self.config.max_start_length:]}
         original_right_side = {'responses': initial_input_ids[:, []]}
@@ -222,47 +224,7 @@ class LLMGenerationManager:
 
             # Execute in environment and process observations
             next_obs, dones = self.execute_predictions(
-                responses_str, self.tokenizer.pad_token, active_mask
-            )
-            
-            curr_active_mask = torch.tensor([not done for done in dones], dtype=torch.bool)
-            active_mask = active_mask * curr_active_mask
-            active_num_list.append(active_mask.sum().item())
-
-            next_obs_ids = self._process_next_obs(next_obs)
-            
-            # Update states
-            rollings = self._update_rolling_state(
-                rollings,
-                responses_ids,
-                next_obs_ids
-            )
-            original_right_side = self._update_right_side(
-                original_right_side,
-                responses_ids,
-                next_obs_ids
-            )
-            
-        # final LLM rollout
-        if active_mask.sum():
-            rollings.batch = self.tensor_fn.cut_to_effective_len(
-                rollings.batch,
-                keys=['input_ids', 'attention_mask', 'position_ids']
-            )
-
-            # gen_output = self.actor_rollout_wg.generate_sequences(rollings)
-            rollings_active = DataProto.from_dict({
-                k: v[active_mask] for k, v in rollings.batch.items()
-            })            
-            gen_output = self._generate_with_gpu_padding(rollings_active)
-
-            meta_info = gen_output.meta_info            
-            responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
-            responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
-
-            # # Execute in environment and process observations
-            _, dones = self.execute_predictions(
-                responses_str, self.tokenizer.pad_token, active_mask, do_search=False
+                responses_str, self.tokenizer.pad_token, active_mask, ground_truths, do_search=False
             )
 
             curr_active_mask = torch.tensor([not done for done in dones], dtype=torch.bool)
@@ -306,7 +268,7 @@ class LLMGenerationManager:
         
         return final_output
 
-    def execute_predictions(self, predictions: List[str], pad_token: str, active_mask=None, do_search=True) -> List[str]:
+    def execute_predictions(self, predictions: List[str], pad_token: str, active_mask=None,ground_truths=[list()], do_search=True) -> List[str]:
         """
         Execute predictions across multiple environments.
         NOTE: the function is the actual `step` function in the environment
@@ -325,7 +287,7 @@ class LLMGenerationManager:
         
         execute_queries = [content for action, content in zip(cur_actions, contents) if action == 'execute']
         if do_search:
-            execute_results = self.batch_execute(execute_queries)
+            execute_results = self.batch_execute(execute_queries, ground_truths)
             assert len(execute_results) == sum([1 for action in cur_actions if action == 'execute'])
         else:
             execute_results = [''] * sum([1 for action in cur_actions if action == 'execute'])
@@ -383,7 +345,7 @@ If I want to give the final file of code as the answer, I should put the answer 
             
         return actions, contents
 
-    def batch_execute(self, queries: List[str] = None) -> List[str]:
+    def batch_execute(self, queries: List[str] = None, ground_truths = None) -> List[str]:
         """
         Batchified code execution for Python code snippets.
         Args:
@@ -391,16 +353,16 @@ If I want to give the final file of code as the answer, I should put the answer 
         Returns:
             List of execution results (stdout/stderr) as strings
         """
-        results = self._batch_execute(queries)
+        results = self._batch_execute(queries, ground_truths)
         return [self._execution2string(result) for result in results]
 
-    def _batch_execute(self, queries):
+    def _batch_execute(self, queries, ground_truths):
         """
         Send code execution requests to execution server
         """
         payload = {
             "code": queries,
-            "test_cases": [list()]*len(queries)
+            "test_cases": ground_truths
             #"timeout": self.config.timeout,  # Timeout per execution in seconds
             #"max_output_length": self.config.max_output_length  # Limit output size
         }

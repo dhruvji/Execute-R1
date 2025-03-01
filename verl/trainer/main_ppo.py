@@ -25,7 +25,7 @@ import pdb
 
 def _select_rm_score_fn(data_source):
     if "augmented" in data_source: 
-        return execute.compute_score 
+        return execute.compute_scores 
     elif "nq" in data_source:
         return qa_em.compute_score_em
     else:
@@ -43,7 +43,6 @@ class RewardManager():
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
-        pdb.set_trace()
 
         # If there is rm score, we directly return rm score. Otherwise, we compute via rm_score_fn
         if 'rm_scores' in data.batch.keys():

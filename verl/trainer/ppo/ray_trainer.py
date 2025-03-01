@@ -479,6 +479,10 @@ class RayPPOTrainer(object):
         if not self.config.do_search:
             for test_data in self.val_dataloader:
                 test_batch = DataProto.from_single_dict(test_data)
+                pdb.set_trace()
+                ground_truths = test_batch.non_tensor_batch['reward_model']
+                ground_truths = [i['ground_truth'] for i in ground_truths]
+
 
                 # we only do validation on rule-based rm
                 if self.config.reward_model.enable and test_batch[0].non_tensor_batch['reward_model']['style'] == 'model':
@@ -512,6 +516,10 @@ class RayPPOTrainer(object):
             for batch_dict in self.val_dataloader:
                 timing_raw = {}
                 test_batch: DataProto = DataProto.from_single_dict(batch_dict)
+                pdb.set_trace()
+                ground_truths = test_batch.non_tensor_batch['reward_model']
+                ground_truths = [i['ground_truth'] for i in ground_truths]
+
                 # test_batch = test_batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n_agent, interleave=True)
                 
                 test_gen_batch = test_batch.pop(batch_keys=['input_ids', 'attention_mask', 'position_ids'])
@@ -528,6 +536,7 @@ class RayPPOTrainer(object):
                         generation_manager.timing_raw = timing_raw
                         final_gen_batch_output = generation_manager.run_llm_loop(
                             gen_batch=test_gen_batch,
+                            ground_truths=ground_truths,
                             initial_input_ids=first_input_ids,
                         )
                     
@@ -733,6 +742,10 @@ class RayPPOTrainer(object):
 
                 batch: DataProto = DataProto.from_single_dict(batch_dict)
                 batch = batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n_agent, interleave=True)
+                pdb.set_trace()
+                ground_truths = batch.non_tensor_batch['reward_model']
+                ground_truths = [i['ground_truth'] for i in ground_truths]
+
 
                 # pop those keys for generation
                 gen_batch = batch.pop(batch_keys=['input_ids', 'attention_mask', 'position_ids'])
@@ -761,6 +774,7 @@ class RayPPOTrainer(object):
                             generation_manager.timing_raw = timing_raw
                             final_gen_batch_output = generation_manager.run_llm_loop(
                                 gen_batch=gen_batch,
+                                ground_truths=ground_truths,
                                 initial_input_ids=first_input_ids,
                             )
 
