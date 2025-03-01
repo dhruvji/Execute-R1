@@ -49,10 +49,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    data_source = 'augmented_with_tests_actually'
+    data_source = 'augmented_v5'
 
     dataset = []
-    with open('augmented_with_tests_actually.jsonl', 'r') as f:
+    with open('augmented_v5.jsonl', 'r') as f:
         for line in f:
             if line.strip():
                 data = json.loads(line)

@@ -193,7 +193,7 @@ class LLMGenerationManager:
 
     def run_llm_loop(self, gen_batch, ground_truths, initial_input_ids: torch.Tensor) -> Tuple[Dict, Dict]:
         """Run main LLM generation loop."""
-        pdb.set_trace()
+        #pdb.set_trace()
         ground_truths = [i['test_cases'] for i in ground_truths] 
         
         original_left_side = {'input_ids': initial_input_ids[:, -self.config.max_start_length:]}
@@ -368,7 +368,6 @@ If I want to give the final file of code as the answer, I should put the answer 
         }
         
 
-        print(payload)
         return requests.post(self.config.search_url, json=payload).json()
 
     def _execution2string(self, execution_result):

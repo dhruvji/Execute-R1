@@ -479,7 +479,7 @@ class RayPPOTrainer(object):
         if not self.config.do_search:
             for test_data in self.val_dataloader:
                 test_batch = DataProto.from_single_dict(test_data)
-                pdb.set_trace()
+                #pdb.set_trace()
                 ground_truths = test_batch.non_tensor_batch['reward_model']
                 ground_truths = [i['ground_truth'] for i in ground_truths]
 
@@ -516,7 +516,7 @@ class RayPPOTrainer(object):
             for batch_dict in self.val_dataloader:
                 timing_raw = {}
                 test_batch: DataProto = DataProto.from_single_dict(batch_dict)
-                pdb.set_trace()
+                #pdb.set_trace()
                 ground_truths = test_batch.non_tensor_batch['reward_model']
                 ground_truths = [i['ground_truth'] for i in ground_truths]
 
@@ -742,7 +742,7 @@ class RayPPOTrainer(object):
 
                 batch: DataProto = DataProto.from_single_dict(batch_dict)
                 batch = batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n_agent, interleave=True)
-                pdb.set_trace()
+                #pdb.set_trace()
                 ground_truths = batch.non_tensor_batch['reward_model']
                 ground_truths = [i['ground_truth'] for i in ground_truths]
 
