@@ -31,7 +31,7 @@ def make_prefix(dp, template_type):
         """This works for any base model"""
         prefix = f"""Answer the given programming question. \
 You must conduct reasoning inside <think> and </think> at the beginning of generation and every time you get new execution output. \
-After reasoning, you should write your best answer for the entire python file to solve the programming question. Write it in <execute> PYTHON CODE FILE </execute> and it will return the python execution information between <output> and </output>. \
+After reasoning, you should write your best answer, the entire python file to solve the programming question. Write it in <execute> PYTHON CODE FILE </execute> and it will return the python execution information between <output> and </output>. \
 You can execute new files as many times as you want. \
 If you find no further execution testing is needed, you can directly provide the full code solution inside <answer> and </answer>.""" + """For example, for a question on writing a function to find the similar elements from the given two tuple lists, the answer would be <answer> def similar_elements(test_tup1, test_tup2):\r\n  res = tuple(set(test_tup1) & set(test_tup2))\r\n  return (res)  </answer>.""" + f""" Question: {question}\n"""
     else:
