@@ -27,6 +27,9 @@ class GenerationConfig:
     no_think_rl: bool=False
     search_url: str = None
     topk: int = 3
+    timeout: int = 10
+    max_output_length: int = 1000
+    execute_url: str = None
 
 class LLMGenerationManager:
     def __init__(
@@ -60,14 +63,14 @@ class LLMGenerationManager:
         )['input_ids']
 
     def _postprocess_responses(self, responses: torch.Tensor) -> torch.Tensor:
-        """Process responses to stop at search operation or answer operation."""
+        """Process responses to stop at execute operation or answer operation."""
         responses_str = self.tokenizer.batch_decode(
             responses, 
             skip_special_tokens=True
         )
 
-        responses_str = [resp.split('</search>')[0] + '</search>'
-                 if '</search>' in resp 
+        responses_str = [resp.split('</execute>')[0] + '</execute>'
+                 if '</execute>' in resp 
                  else resp.split('</answer>')[0] + '</answer>'
                  if '</answer>' in resp 
                  else resp
@@ -93,7 +96,7 @@ class LLMGenerationManager:
         )['input_ids']
 
         if next_obs_ids.shape[1] > self.config.max_obs_length:
-            print(f"[WARNING] OBSERVATION TOO LONG, CONSIDER CHANGING YOUR CONFIG, {next_obs_ids.shape[1]} & {self.config.max_obs_length}")            
+            print(f"[WARNING] OUTPUT TOO LONG, CONSIDER CHANGING YOUR CONFIG, {next_obs_ids.shape[1]} & {self.config.max_obs_length}")            
             next_obs_ids = next_obs_ids[:, :self.config.max_obs_length]
 
         return next_obs_ids
@@ -322,12 +325,12 @@ class LLMGenerationManager:
         cur_actions, contents = self.postprocess_predictions(predictions)
         next_obs, dones = [], []
         
-        search_queries = [content for action, content in zip(cur_actions, contents) if action == 'search']
+        execute_queries = [content for action, content in zip(cur_actions, contents) if action == 'execute']
         if do_search:
-            search_results = self.batch_search(search_queries)
-            assert len(search_results) == sum([1 for action in cur_actions if action == 'search'])
+            execute_results = self.batch_execute(execute_queries)
+            assert len(execute_results) == sum([1 for action in cur_actions if action == 'execute'])
         else:
-            search_results = [''] * sum([1 for action in cur_actions if action == 'search'])
+            execute_results = [''] * sum([1 for action in cur_actions if action == 'execute'])
 
         for i, (action, active) in enumerate(zip(cur_actions, active_mask)):
             
@@ -338,16 +341,16 @@ class LLMGenerationManager:
                 if action == 'answer':
                     next_obs.append('')
                     dones.append(1)
-                elif action == 'search':
-                    next_obs.append(f'\n\n<information>{search_results.pop(0).strip()}</information>\n\n')
+                elif action == 'execute':
+                    next_obs.append(f'\n\n<output>{execute_results.pop(0).strip()}</output>\n\n')
                     dones.append(0)
                 else:
                     next_obs.append(f'\nMy previous action is invalid. \
-If I want to search, I should put the query between <search> and </search>. \
-If I want to give the final answer, I should put the answer between <answer> and </answer>. Let me try again.\n')
+If I want to execute code, I should put the entire file of code between <execute> and </execute>. \
+If I want to give the final file of code as the answer, I should put the answer between <answer> and </answer>. Let me try again.\n')
                     dones.append(0)
             
-        assert len(search_results) == 0
+        assert len(execute_results) == 0
             
         return next_obs, dones
 
@@ -366,7 +369,7 @@ If I want to give the final answer, I should put the answer between <answer> and
                 
         for prediction in predictions:
             if isinstance(prediction, str): # for llm output
-                pattern = r'<(search|answer)>(.*?)</\1>'
+                pattern = r'<(execute|answer)>(.*?)</\1>'
                 match = re.search(pattern, prediction, re.DOTALL)
                 if match:
                     content = match.group(2).strip()  # Return only the content inside the tags
@@ -382,35 +385,51 @@ If I want to give the final answer, I should put the answer between <answer> and
             
         return actions, contents
 
-    def batch_search(self, queries: List[str] = None) -> str:
+    def batch_execute(self, queries: List[str] = None) -> List[str]:
         """
-        Batchified search for queries.
+        Batchified code execution for Python code snippets.
         Args:
-            queries: queries to call the search engine
+            queries: List of Python code snippets to execute
         Returns:
-            search results which is concatenated into a string
+            List of execution results (stdout/stderr) as strings
         """
-        results = self._batch_search(queries)['result']
-        
-        return [self._passages2string(result) for result in results]
+        results = self._batch_execute(queries)['result']
+        return [self._execution2string(result) for result in results]
 
-    def _batch_search(self, queries):
-        
+    def _batch_execute(self, queries):
+        """
+        Send code execution requests to execution server
+        """
         payload = {
-            "queries": queries,
-            "topk": self.config.topk,
-            "return_scores": True
+            "code_snippets": queries,
+            "timeout": self.config.timeout,  # Timeout per execution in seconds
+            "max_output_length": self.config.max_output_length  # Limit output size
         }
         
-        return requests.post(self.config.search_url, json=payload).json()
+        return requests.post(self.config.execute_url, json=payload).json()
 
-    def _passages2string(self, retrieval_result):
-        format_reference = ''
-        for idx, doc_item in enumerate(retrieval_result):
-            
-            content = doc_item['document']['contents']
-            title = content.split("\n")[0]
-            text = "\n".join(content.split("\n")[1:])
-            format_reference += f"Doc {idx+1}(Title: {title}) {text}\n"
+    def _execution2string(self, execution_result):
+        """
+        Format execution results into a readable string
+        """
+        format_output = ''
+        
+        # Handle different execution result fields
+        if 'stdout' in execution_result:
+            stdout = execution_result['stdout'].strip()
+            if stdout:
+                format_output += f"Output:\n{stdout}\n"
+                
+        if 'stderr' in execution_result:
+            stderr = execution_result['stderr'].strip()
+            if stderr:
+                format_output += f"Error:\n{stderr}\n"
+                
+        if 'test_results' in execution_result:
+            test_results = execution_result['test_results']
+            format_output += f"Test Results:\n"
+            for i, result in enumerate(test_results):
+                status = "✓" if result['passed'] else "✗"
+                format_output += f"Test {i+1}: {status} {result.get('message', '')}\n"
 
-        return format_reference
+        return format_output.strip() or "No output"
